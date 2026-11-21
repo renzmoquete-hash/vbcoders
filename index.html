@@ -1,0 +1,420 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ISATU Campus Maintenance &amp; Issue Reporting System</title>
+
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- MapLibre GL JS CDN -->
+  <link href="https://unpkg.com/maplibre-gl@4.5.2/dist/maplibre-gl.css" rel="stylesheet" />
+  <script src="https://unpkg.com/maplibre-gl@4.5.2/dist/maplibre-gl.js"></script>
+
+  <!-- Inter Font -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+
+  <!-- Custom CSS -->
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+<div id="app-shell">
+
+  <!-- ══════════════════════════════════════════
+       HEADER
+  ══════════════════════════════════════════ -->
+  <header id="app-header" role="banner">
+    <div class="header-brand">
+      <div class="header-logo" aria-hidden="true">ISATU</div>
+      <div>
+        <h1>Campus Maintenance &amp; Issue Reporting</h1>
+        <div class="header-sub">Track 3 — La Paz Main Campus</div>
+      </div>
+    </div>
+    <div class="header-time" aria-live="polite">
+      <span id="hdr-time" style="font-size:13px;font-weight:700;"></span>
+      <span id="hdr-date" style="font-size:10px;opacity:.7;"></span>
+    </div>
+  </header>
+
+  <!-- ══════════════════════════════════════════
+       TAB NAVIGATION
+  ══════════════════════════════════════════ -->
+  <nav id="tab-nav" role="tablist" aria-label="Main navigation">
+    <button id="tab-btn-report" class="tab-btn active" role="tab" aria-selected="true"
+            aria-controls="tab-report" data-panel="tab-report">
+      <span class="tab-icon" aria-hidden="true">📋</span>
+      Report Issue
+    </button>
+    <button id="tab-btn-dispatch" class="tab-btn" role="tab" aria-selected="false"
+            aria-controls="tab-dispatch" data-panel="tab-dispatch">
+      <span class="tab-icon" aria-hidden="true">🛠️</span>
+      Dispatch Board
+      <span class="badge-pill" id="badge-total-tickets" aria-label="Total tickets">0</span>
+    </button>
+    <button id="tab-btn-benchmark" class="tab-btn" role="tab" aria-selected="false"
+            aria-controls="tab-benchmark" data-panel="tab-benchmark">
+      <span class="tab-icon" aria-hidden="true">⚡</span>
+      Benchmark
+    </button>
+  </nav>
+
+  <!-- ══════════════════════════════════════════
+       TAB 1: STUDENT REPORT
+  ══════════════════════════════════════════ -->
+  <section id="tab-report" class="tab-panel active" role="tabpanel" aria-labelledby="tab-btn-report">
+
+    <div class="section-header">
+      <div>
+        <h2>📋 Submit a Maintenance Issue</h2>
+        <p>Pin your location on the map, fill the form, and submit your report.</p>
+      </div>
+    </div>
+
+    <div class="p-4 flex flex-col gap-3" style="max-width:720px;margin:0 auto;">
+
+      <!-- Report Alert -->
+      <div id="report-alert" role="alert" aria-live="assertive"></div>
+
+      <!-- Map -->
+      <div class="form-group">
+        <label class="form-label">
+          <span>📍</span> Pin Location on Map
+          <span class="required">*</span>
+        </label>
+        <div class="map-wrapper">
+          <div id="report-map" aria-label="Campus map — click to pin your issue location"></div>
+          <div class="map-hint" aria-hidden="true">Click on the map to pin your location</div>
+        </div>
+      </div>
+
+      <!-- Coordinates + GPS -->
+      <div class="flex gap-2" style="align-items:center;flex-wrap:wrap;">
+        <span id="coords-display" aria-live="polite">
+          <span aria-hidden="true">📌</span>
+          <span id="coords-text">No pin placed yet</span>
+        </span>
+        <button id="btn-use-gps" aria-label="Use my GPS location, clamped to campus bounds">
+          <span aria-hidden="true">📡</span> Use My GPS
+        </button>
+      </div>
+
+      <!-- Building Quick-Select -->
+      <div class="form-group">
+        <label class="form-label">🏫 Quick Building Select</label>
+        <div id="building-chips" role="group" aria-label="Quick building selection">
+          <label style="font-size:11px;font-weight:600;color:#64748b;width:100%;margin-bottom:4px;">
+            Tap a building to auto-pin its location:
+          </label>
+          <button class="building-chip" data-building="Admin"       data-lat="10.71560" data-lng="122.56580" aria-label="Admin Building">🏛️ Admin</button>
+          <button class="building-chip" data-building="Engineering" data-lat="10.71480" data-lng="122.56550" aria-label="Engineering Building">⚙️ Engineering</button>
+          <button class="building-chip" data-building="CIT"         data-lat="10.71510" data-lng="122.56620" aria-label="CIT Building">💻 CIT</button>
+          <button class="building-chip" data-building="CEA"         data-lat="10.71540" data-lng="122.56650" aria-label="CEA Building">📐 CEA</button>
+          <button class="building-chip" data-building="Education"   data-lat="10.71600" data-lng="122.56530" aria-label="Education Building">📚 Education</button>
+          <button class="building-chip" data-building="Library"     data-lat="10.71580" data-lng="122.56600" aria-label="Library">📖 Library</button>
+          <button class="building-chip" data-building="ICT"         data-lat="10.71520" data-lng="122.56570" aria-label="ICT Building">🖥️ ICT</button>
+        </div>
+      </div>
+
+      <!-- Report Form -->
+      <form id="issue-report-form" novalidate aria-label="Issue report form">
+
+        <!-- Hidden Coordinates -->
+        <input type="hidden" id="report-lat" name="lat" />
+        <input type="hidden" id="report-lng" name="lng" />
+
+        <div class="flex flex-col gap-3">
+
+          <!-- Issue Type -->
+          <div class="form-group">
+            <label class="form-label" for="issue-type">
+              🔧 Issue Type <span class="required">*</span>
+            </label>
+            <select id="issue-type" name="issue_type" class="form-control" required aria-required="true">
+              <option value="" disabled selected>— Select issue category —</option>
+              <option value="IT / PC &amp; Network">💻 IT / PC &amp; Network</option>
+              <option value="Electrical">⚡ Electrical</option>
+              <option value="Plumbing">🚿 Plumbing</option>
+              <option value="Aircon / HVAC">❄️ Aircon / HVAC</option>
+              <option value="Furniture / Civil">🪑 Furniture / Civil</option>
+            </select>
+          </div>
+
+          <!-- Location Text -->
+          <div class="form-group">
+            <label class="form-label" for="location-text">
+              📍 Location Description <span class="required">*</span>
+            </label>
+            <input id="location-text" name="location_text" type="text" class="form-control"
+                   placeholder="e.g. CIT Building Room 203, 2nd Floor" required aria-required="true" />
+          </div>
+
+          <!-- Issue Description -->
+          <div class="form-group">
+            <label class="form-label" for="issue-description">
+              📝 Describe the Issue <span class="required">*</span>
+            </label>
+            <textarea id="issue-description" name="description" class="form-control"
+                      placeholder="Describe the problem in detail — what, where, when, severity..."
+                      required aria-required="true" rows="4"></textarea>
+          </div>
+
+          <!-- Preferred Technician -->
+          <div class="form-group">
+            <label class="form-label" for="preferred-tech">
+              👷 Preferred Technician
+            </label>
+            <select id="preferred-tech" name="preferred_tech" class="form-control">
+              <option value="All">All (No preference)</option>
+              <option value="MIS Technician">🖥️ MIS Technician</option>
+              <option value="Electrician">⚡ Electrician</option>
+              <option value="Plumber">🔧 Plumber</option>
+              <option value="HVAC Tech">❄️ HVAC Tech</option>
+              <option value="General Maintenance">🛠️ General Maintenance</option>
+            </select>
+          </div>
+
+          <!-- Photo Upload -->
+          <div class="form-group">
+            <label class="form-label">📷 Attach Photo <span style="font-weight:400;color:#9ca3af;">(Optional)</span></label>
+            <div class="photo-upload-zone" id="photo-drop-zone">
+              <label class="photo-upload-label" for="photo-input">
+                <span class="upload-icon" aria-hidden="true">📸</span>
+                <span>Click or drag to upload a photo</span>
+                <span style="font-size:10px;color:#9ca3af;">JPG, PNG, WEBP — max 5MB</span>
+              </label>
+              <input id="photo-input" name="photo" type="file" accept="image/*" aria-label="Upload photo" />
+            </div>
+            <div id="photo-preview-container" aria-label="Photo preview">
+              <img id="photo-preview-img" src="" alt="Preview" title="Click to enlarge" />
+              <span id="photo-file-name"></span>
+              <button type="button" id="btn-remove-photo" aria-label="Remove photo">✕ Remove</button>
+            </div>
+          </div>
+
+          <!-- Submit -->
+          <button type="submit" id="btn-submit-report" aria-label="Submit issue report">
+            <span class="btn-icon" aria-hidden="true">🚀</span>
+            <span class="btn-label">Submit Report</span>
+          </button>
+
+        </div>
+      </form>
+
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════════════
+       TAB 2: TECHNICIAN DISPATCH BOARD
+  ══════════════════════════════════════════ -->
+  <section id="tab-dispatch" class="tab-panel" role="tabpanel" aria-labelledby="tab-btn-dispatch">
+
+    <div class="section-header">
+      <div>
+        <h2>🛠️ Technician Dispatch Board</h2>
+        <p>Live overview of all campus maintenance tickets — claim and resolve assignments.</p>
+      </div>
+    </div>
+
+    <!-- Stats Bar -->
+    <div id="stats-bar" role="region" aria-label="Ticket statistics">
+      <div class="stat-card total">
+        <div class="stat-value" id="stat-total">0</div>
+        <div class="stat-label">Total</div>
+      </div>
+      <div class="stat-card reported">
+        <div class="stat-value" id="stat-reported">0</div>
+        <div class="stat-label">Reported</div>
+      </div>
+      <div class="stat-card inprogress">
+        <div class="stat-value" id="stat-in-progress">0</div>
+        <div class="stat-label">In Progress</div>
+      </div>
+      <div class="stat-card resolved">
+        <div class="stat-value" id="stat-resolved">0</div>
+        <div class="stat-label">Resolved</div>
+      </div>
+      <div class="stat-card urgent">
+        <div class="stat-value" id="stat-urgent">0</div>
+        <div class="stat-label">Urgent</div>
+      </div>
+    </div>
+
+    <!-- Dispatch Map -->
+    <div class="p-3">
+      <div class="form-group mb-2">
+        <label class="form-label">🗺️ Campus Issue Overview Map</label>
+        <div class="map-wrapper">
+          <div id="dispatch-map" aria-label="Dispatch overview map showing all ticket pins"></div>
+          <div class="map-hint" aria-hidden="true">
+            🔴 Reported &nbsp;|&nbsp; 🟡 In Progress &nbsp;|&nbsp; 🟢 Resolved
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Filters -->
+    <div id="dispatch-filters" role="search" aria-label="Ticket filters">
+      <div class="filter-group" role="group" aria-label="Filter by status">
+        <button class="filter-status-btn active" data-status="all" aria-pressed="true">All</button>
+        <button class="filter-status-btn" data-status="reported"    aria-pressed="false">Reported</button>
+        <button class="filter-status-btn" data-status="in_progress" aria-pressed="false">In Progress</button>
+        <button class="filter-status-btn" data-status="resolved"    aria-pressed="false">Resolved</button>
+      </div>
+
+      <select id="filter-role-select" aria-label="Filter by technician role">
+        <option value="">All Roles</option>
+        <option value="MIS Technician">MIS Technician</option>
+        <option value="Electrician">Electrician</option>
+        <option value="Plumber">Plumber</option>
+        <option value="HVAC Tech">HVAC Tech</option>
+        <option value="General Maintenance">General Maintenance</option>
+      </select>
+
+      <input id="filter-search-input" type="search" placeholder="🔍 Search tickets…"
+             aria-label="Search tickets by keyword" autocomplete="off" />
+
+      <button id="btn-refresh-icon" title="Refresh tickets" aria-label="Refresh ticket list">
+        ↻
+      </button>
+    </div>
+
+    <!-- Ticket Cards Grid -->
+    <div id="tickets-container" role="list" aria-label="Ticket list" aria-live="polite"></div>
+
+    <!-- Empty State -->
+    <div id="tickets-empty" role="status" aria-live="polite">
+      <div class="empty-icon" aria-hidden="true">📭</div>
+      <p>No tickets match the current filter.</p>
+      <p style="font-size:12px;color:#94a3b8;">Try adjusting filters or submitting a new report.</p>
+    </div>
+
+  </section>
+
+  <!-- ══════════════════════════════════════════
+       TAB 3: BASELINE BENCHMARK
+  ══════════════════════════════════════════ -->
+  <section id="tab-benchmark" class="tab-panel" role="tabpanel" aria-labelledby="tab-btn-benchmark">
+
+    <div class="section-header">
+      <div>
+        <h2>⚡ Baseline Benchmark</h2>
+        <p>Stress-test the backend API with batch ticket submission. Measures latency, merge detection, and validation.</p>
+      </div>
+    </div>
+
+    <div class="benchmark-wrapper">
+
+      <div class="form-group">
+        <label class="form-label" for="benchmark-textarea">
+          📄 Batch Input
+          <span style="font-weight:400;color:#9ca3af;font-size:11px;">— one entry per line: issue_type | location_text | description</span>
+        </label>
+        <textarea id="benchmark-textarea"
+                  aria-label="Batch benchmark input, one row per line: issue_type pipe location_text pipe description"
+                  placeholder="IT / PC &amp; Network | CIT Room 201 | Projector not displaying
+Electrical | Admin Building | Flickering lights 2nd floor
+Plumbing | CEA CR | Leaking faucet near sink 3
+..."></textarea>
+      </div>
+
+      <div class="benchmark-actions">
+        <button class="btn-benchmark btn-load-sample" onclick="loadSampleBenchmarkData()"
+                aria-label="Load 10 sample benchmark records">
+          <span aria-hidden="true">📂</span> Load Sample Data (10)
+        </button>
+        <button id="btn-run-benchmark" class="btn-benchmark" aria-label="Run benchmark test">
+          <span aria-hidden="true">▶</span> Run Benchmark
+        </button>
+      </div>
+
+      <!-- Scorecard -->
+      <div id="benchmark-scorecard" aria-live="polite" aria-label="Benchmark results scorecard">
+
+        <div class="scorecard-header">
+          <h3>📊 Benchmark Results</h3>
+          <span id="scorecard-timestamp" aria-label="Benchmark run time"></span>
+        </div>
+
+        <div class="scorecard-metrics" role="list">
+          <div class="metric-box exec" role="listitem">
+            <div class="metric-value" id="metric-exec-time">—</div>
+            <div class="metric-label">Exec Time (ms)</div>
+          </div>
+          <div class="metric-box inserted" role="listitem">
+            <div class="metric-value" id="metric-inserted">—</div>
+            <div class="metric-label">Inserted</div>
+          </div>
+          <div class="metric-box merged" role="listitem">
+            <div class="metric-value" id="metric-merged">—</div>
+            <div class="metric-label">Merged</div>
+          </div>
+          <div class="metric-box rejected" role="listitem">
+            <div class="metric-value" id="metric-rejected">—</div>
+            <div class="metric-label">Rejected</div>
+          </div>
+        </div>
+
+        <div class="scorecard-log-header">
+          <span aria-hidden="true">📋</span> Audit Log
+        </div>
+        <div id="benchmark-log-container" role="log" aria-label="Benchmark audit log" aria-live="off"></div>
+
+      </div>
+    </div>
+  </section>
+
+</div><!-- /app-shell -->
+
+
+<!-- ══════════════════════════════════════════
+     CLAIM MODAL
+══════════════════════════════════════════ -->
+<div id="claim-modal" class="modal-overlay" role="dialog" aria-modal="true"
+     aria-labelledby="claim-modal-title" aria-describedby="claim-modal-desc">
+  <div class="modal-box">
+    <div class="modal-header">
+      <h3 id="claim-modal-title">🛠️ Claim Ticket</h3>
+      <button class="modal-close" aria-label="Close claim modal"
+              onclick="closeModal('claim-modal')">×</button>
+    </div>
+    <div class="modal-body">
+      <p id="claim-modal-desc" style="font-size:12px;color:#64748b;margin-bottom:12px;">
+        Enter your name to claim this ticket and begin work.
+      </p>
+      <div class="modal-ticket-info" id="modal-ticket-code" aria-label="Ticket code being claimed">—</div>
+      <div class="form-group">
+        <label class="form-label" for="technician-name-input">
+          👷 Your Name <span class="required">*</span>
+        </label>
+        <input id="technician-name-input" type="text" class="form-control"
+               placeholder="Enter technician full name"
+               aria-required="true" autocomplete="name" />
+      </div>
+      <div id="claim-error-message" role="alert" aria-live="assertive"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-modal-cancel" onclick="closeModal('claim-modal')" aria-label="Cancel claim">Cancel</button>
+      <button id="btn-confirm-claim" aria-label="Confirm claim assignment">✓ Confirm Claim</button>
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════════════
+     PHOTO LIGHTBOX MODAL
+══════════════════════════════════════════ -->
+<div id="image-modal" role="dialog" aria-modal="true" aria-label="Photo lightbox"
+     onclick="closeModal('image-modal')">
+  <img id="image-modal-src" src="" alt="Full-size ticket photo" />
+</div>
+
+
+<!-- App JS -->
+<script src="app.js"></script>
+
+</body>
+</html>
