@@ -147,26 +147,44 @@ function checkAndMergeDuplicate($conn, $issue_type, $lat, $lon) {
 // HELPER FUNCTION: Handle Photo Upload
 // ============================================================
 // Moves the uploaded photo to the uploads/ folder.
-// Returns the saved file path, or NULL if no photo was sent.
+// Also mirrors to C:\Users\renz\Documents\xampp\htdocs\isatu-maintenance\uploads\
+// Returns the saved relative file path ("uploads/xxx.jpg"), or NULL if no photo was sent.
 // ============================================================
 function handlePhotoUpload() {
     // Check if a file was actually uploaded and there were no errors
     if (!isset($_FILES["photo"]) || $_FILES["photo"]["error"] !== UPLOAD_ERR_OK) {
-        return null; // No photo uploaded, that's okay
+        return null;
     }
 
     // Create a unique filename to avoid overwriting existing photos
-    // We combine the current time + random number + original extension
     $ext      = pathinfo($_FILES["photo"]["name"], PATHINFO_EXTENSION);
     $filename = time() . "_" . rand(1000, 9999) . "." . strtolower($ext);
     $destPath = "uploads/" . $filename;
 
-    // Move the temp file to our uploads folder
-    if (move_uploaded_file($_FILES["photo"]["tmp_name"], $destPath)) {
-        return $destPath; // Return the saved path so we can store it in the DB
+    // Primary directory relative to this script
+    $primaryDir = __DIR__ . "/uploads/";
+    // Explicit isatu-maintenance directory requested by user
+    $isatuDir   = "C:/Users/renz/Documents/xampp/htdocs/isatu-maintenance/uploads/";
+
+    if (!is_dir($primaryDir)) {
+        @mkdir($primaryDir, 0777, true);
+    }
+    if (!is_dir($isatuDir)) {
+        @mkdir($isatuDir, 0777, true);
     }
 
-    return null; // Upload failed for some reason
+    $targetFile = $primaryDir . $filename;
+
+    // Move the temp file to our primary uploads folder
+    if (move_uploaded_file($_FILES["photo"]["tmp_name"], $targetFile)) {
+        // Also mirror to isatu-maintenance/uploads/ so images work seamlessly
+        if (is_dir($isatuDir) && realpath($primaryDir) !== realpath($isatuDir)) {
+            @copy($targetFile, $isatuDir . $filename);
+        }
+        return $destPath; // Return the saved path for database storage
+    }
+
+    return null;
 }
 
 
@@ -436,8 +454,11 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && $action === "delete") {
     }
 
     // Remove photo from uploads folder if it exists
-    if (!empty($ticket["photo_path"]) && file_exists($ticket["photo_path"])) {
-        @unlink($ticket["photo_path"]);
+    if (!empty($ticket["photo_path"])) {
+        $p1 = __DIR__ . "/" . $ticket["photo_path"];
+        $p2 = "C:/Users/renz/Documents/xampp/htdocs/isatu-maintenance/" . $ticket["photo_path"];
+        if (file_exists($p1)) @unlink($p1);
+        if (file_exists($p2)) @unlink($p2);
     }
 
     // Delete the ticket row from the issues table

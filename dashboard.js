@@ -6,7 +6,7 @@
 
 'use strict';
 
-const API_BASE_URL = 'http://localhost/vbcoders/api.php';
+const API_BASE_URL = 'api.php';
 
 let campus2D = null;
 let allTickets = [];
