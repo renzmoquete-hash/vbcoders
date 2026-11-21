@@ -400,6 +400,20 @@ body {
 }
 .btn-resolve:hover:not(:disabled) { background: #f0fdf4; transform: translateY(-1px); }
 
+.btn-delete {
+  background: #fef2f2;
+  color: #ef4444;
+  border-color: #fecaca;
+  flex: 0 0 auto;
+  padding: 7px 11px;
+}
+.btn-delete:hover:not(:disabled) {
+  background: #fee2e2;
+  border-color: #f87171;
+  color: #dc2626;
+  transform: translateY(-1px);
+}
+
 .btn-action:disabled { opacity: .4; cursor: not-allowed; transform: none; }
 
 /* ── RIGHT: Map Panel ── */

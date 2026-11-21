@@ -520,6 +520,10 @@ class ISATUCampus2D {
                   style="flex:1;padding:6px 8px;background:#002663;color:white;border:1px solid #38bdf8;border-radius:6px;font-size:11px;font-weight:700;cursor:pointer;">
             🛠️ Claim
           </button>
+          <button type="button" class="btn-2d-delete" data-id="${ticket.id}"
+                  style="padding:6px 10px;background:#7f1d1d;color:#fca5a5;border:1px solid #ef4444;border-radius:6px;font-size:11px;font-weight:700;cursor:pointer;">
+            🗑️ Delete
+          </button>
         ` : ''}
         ${ticket.status !== 'Resolved' ? `
           <button type="button" class="btn-2d-resolve" data-id="${ticket.id}"
@@ -540,6 +544,14 @@ class ISATUCampus2D {
       claimBtn.addEventListener('click', (e) => {
         e.stopPropagation();
         if (window.openClaimModal) window.openClaimModal(ticket.id, ticket.ticket_code);
+      });
+    }
+
+    const deleteBtn = popup.querySelector('.btn-2d-delete');
+    if (deleteBtn) {
+      deleteBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (window.deleteTicket) window.deleteTicket(ticket.id, ticket.ticket_code, deleteBtn);
       });
     }
 

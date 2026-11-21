@@ -397,6 +397,61 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && $action === "resolve") {
 
 
 // ----------------------------------------------------------------
+// ROUTE 5: POST api.php?action=delete — Delete a ticket (Reported status only)
+// ----------------------------------------------------------------
+if ($_SERVER["REQUEST_METHOD"] === "POST" && $action === "delete") {
+
+    // Accept data from JSON body or regular POST
+    $id = isset($jsonBody["id"]) ? (int) $jsonBody["id"] : (int) ($_POST["id"] ?? 0);
+
+    // Make sure we have a valid ticket ID
+    if ($id <= 0) {
+        echo json_encode([
+            "success" => false,
+            "error"   => "Invalid ticket ID."
+        ]);
+        exit;
+    }
+
+    // Check if the ticket exists and verify its status
+    $checkSql = "SELECT id, status, photo_path FROM issues WHERE id = $id LIMIT 1";
+    $checkRes = mysqli_query($conn, $checkSql);
+    $ticket   = mysqli_fetch_assoc($checkRes);
+
+    if (!$ticket) {
+        echo json_encode([
+            "success" => false,
+            "error"   => "Ticket not found."
+        ]);
+        exit;
+    }
+
+    // Only allow deletion if the ticket is in "Reported" status
+    if ($ticket["status"] !== "Reported") {
+        echo json_encode([
+            "success" => false,
+            "error"   => "Only tickets in 'Reported' status can be deleted."
+        ]);
+        exit;
+    }
+
+    // Remove photo from uploads folder if it exists
+    if (!empty($ticket["photo_path"]) && file_exists($ticket["photo_path"])) {
+        @unlink($ticket["photo_path"]);
+    }
+
+    // Delete the ticket row from the issues table
+    mysqli_query($conn, "DELETE FROM issues WHERE id = $id");
+
+    echo json_encode([
+        "success" => true,
+        "message" => "Ticket deleted successfully."
+    ]);
+    exit;
+}
+
+
+// ----------------------------------------------------------------
 // ROUTE 5: POST api.php?action=batch — Import multiple issues at once
 // ----------------------------------------------------------------
 if ($_SERVER["REQUEST_METHOD"] === "POST" && $action === "batch") {
@@ -571,5 +626,5 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && $action === "login") {
 // If none of the routes matched, return a helpful error message.
 echo json_encode([
     "success" => false,
-    "error"   => "Unknown action. Valid actions: create, claim, resolve, batch, login"
+    "error"   => "Unknown action. Valid actions: create, claim, resolve, batch, login, delete"
 ]);

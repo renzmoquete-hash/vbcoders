@@ -413,6 +413,13 @@ function renderTicketCards(tickets) {
                 title="Mark as Resolved">
           ✅ Resolve
         </button>
+        ${status === 'Reported' ? `
+          <button type="button" class="btn-action btn-delete"
+                  onclick="deleteTicket(${ticket.id}, '${esc(ticket.ticket_code)}', this)"
+                  title="Delete reported ticket">
+            🗑️ Delete
+          </button>
+        ` : ''}
       </div>
     `;
 
@@ -569,6 +576,42 @@ async function resolveTicket(ticketId, btnEl) {
   }
 }
 window.resolveTicket = resolveTicket;
+
+async function deleteTicket(ticketId, ticketCode, btnEl) {
+  if (!confirm(`Are you sure you want to permanently delete ticket ${ticketCode}?`)) return;
+
+  const originalContent = btnEl ? btnEl.innerHTML : '';
+  if (btnEl) {
+    btnEl.disabled = true;
+    btnEl.innerHTML = '<span class="spinner"></span>';
+  }
+
+  try {
+    const res = await fetch(`${API_BASE_URL}?action=delete`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id: ticketId })
+    });
+
+    const data = await res.json();
+    if (!data.success) {
+      throw new Error(data.error || 'Failed to delete ticket.');
+    }
+
+    if (campus2D) {
+      campus2D.closePopup();
+    }
+    await loadTickets();
+
+  } catch (err) {
+    alert(`Delete Error: ${err.message}`);
+    if (btnEl) {
+      btnEl.disabled = false;
+      btnEl.innerHTML = originalContent;
+    }
+  }
+}
+window.deleteTicket = deleteTicket;
 
 function setupPhotoLightbox() {
   window.openImageLightbox = function(src) {
