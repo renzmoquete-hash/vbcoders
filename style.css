@@ -62,7 +62,17 @@ body {
 #app-header .header-brand {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 12px;
+}
+
+.header-logo-img {
+  height: 42px;
+  width: auto;
+  max-width: 100px;
+  object-fit: contain;
+  border-radius: 6px;
+  flex-shrink: 0;
+  display: block;
 }
 
 #app-header .header-logo {
@@ -100,6 +110,14 @@ body {
   flex-direction: column;
   align-items: flex-end;
   gap: 1px;
+}
+
+@media (max-width: 768px) {
+  .hide-mobile { display: none !important; }
+  #app-header { height: 50px; padding: 0 10px; }
+  .header-logo-img { height: 32px; }
+  #app-header h1 { font-size: 14px; }
+  .dash-link-btn { padding: 4px 8px; font-size: 11px; }
 }
 
 /* ── Tab Navigation ── */
@@ -335,8 +353,10 @@ body {
   border-radius: var(--radius-sm);
   font-size: 13px;
   font-family: inherit;
-  color: #1e293b;
-  background: white;
+  color: #000000 !important;
+  -webkit-text-fill-color: #000000 !important;
+  caret-color: #000000 !important;
+  background: #ffffff !important;
   transition: var(--transition);
   outline: none;
 }
@@ -356,6 +376,17 @@ select.form-control {
   background-repeat: no-repeat;
   background-position: right 10px center;
   padding-right: 30px;
+}
+
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus,
+textarea:-webkit-autofill,
+select:-webkit-autofill {
+  -webkit-text-fill-color: #000000 !important;
+  -webkit-box-shadow: 0 0 0px 1000px #ffffff inset !important;
+  box-shadow: 0 0 0px 1000px #ffffff inset !important;
+  caret-color: #000000 !important;
 }
 
 /* ── Photo Upload ── */
@@ -618,6 +649,8 @@ select.form-control {
   overflow: hidden;
   transition: var(--transition);
   position: relative;
+  flex-shrink: 0 !important;
+  height: auto !important;
 }
 
 .ticket-card:hover { transform: translateY(-3px); box-shadow: var(--shadow-md); border-color: #c7d6f5; }

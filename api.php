@@ -86,7 +86,8 @@ function calcPriorityScore($description) {
     $priority = 1; // Everyone starts with a base score of 1
 
     // List of keywords that indicate a serious/urgent situation
-    $urgentWords = ["spark", "fire", "flood", "leak", "no power", "server"];
+    // Added safety keywords like crack, collapse, hazard for civil structural reports
+    $urgentWords = ["spark", "fire", "flood", "leak", "no power", "server", "crack", "collapse", "hazard"];
 
     // Check if any urgent word appears in the description (case-insensitive)
     foreach ($urgentWords as $word) {
@@ -130,51 +131,14 @@ function generateTicketCode($conn) {
 // ============================================================
 // HELPER FUNCTION: Spatial Duplicate Check + Merge
 // ============================================================
-// Before inserting a new ticket, we check if there's already an
-// active ticket of the same type within 20 meters. If yes,
-// we "merge" (increment its count) instead of making a new one.
+// DISABLED — Every report now creates its own ticket, even if
+// it's in the same room or nearby. This way multiple issues
+// at one location each get tracked separately.
 //
-// Returns an array with:
-//   ["found" => true/false, "ticket_code" => "GSO-XXX", "id" => 5]
+// Returns: always ["found" => false] so a new ticket is created.
 // ============================================================
 function checkAndMergeDuplicate($conn, $issue_type, $lat, $lon) {
-    // Escape the issue_type to prevent SQL injection
-    $safe_type = mysqli_real_escape_string($conn, $issue_type);
-
-    // Fetch all active (non-resolved) tickets of the same type
-    $sql    = "SELECT id, ticket_code, latitude, longitude
-               FROM issues
-               WHERE status != 'Resolved'
-               AND issue_type = '$safe_type'";
-    $result = mysqli_query($conn, $sql);
-
-    // Loop through each existing ticket and measure the distance
-    while ($row = mysqli_fetch_assoc($result)) {
-        $distance = getDistanceInMeters(
-            $lat, $lon,
-            (float) $row["latitude"],
-            (float) $row["longitude"]
-        );
-
-        // If this existing ticket is within 20 meters, it's the same issue!
-        if ($distance <= 20.0) {
-            $match_id    = $row["id"];
-            $ticket_code = $row["ticket_code"];
-
-            // Bump up the report count and priority score of the existing ticket
-            mysqli_query($conn,
-                "UPDATE issues
-                 SET report_count = report_count + 1,
-                     priority_score = priority_score + 1
-                 WHERE id = $match_id"
-            );
-
-            // Tell the caller that we found a duplicate
-            return ["found" => true, "ticket_code" => $ticket_code, "id" => $match_id];
-        }
-    }
-
-    // No duplicate found within 20 meters
+    // Always treat every report as a unique ticket
     return ["found" => false];
 }
 
@@ -228,9 +192,9 @@ if (!is_array($jsonBody)) {
 $action = isset($_GET["action"]) ? $_GET["action"] : "";
 
 // ----------------------------------------------------------------
-// ROUTE 1: GET api.php — List all tickets
+// ROUTE 1: GET api.php or api.php?action=list — List all tickets
 // ----------------------------------------------------------------
-if ($_SERVER["REQUEST_METHOD"] === "GET" && $action === "") {
+if ($_SERVER["REQUEST_METHOD"] === "GET" && ($action === "" || $action === "list")) {
 
     // Fetch all tickets, sorted by:
     //   1. Status (Reported first, then In Progress, then Resolved)
@@ -277,6 +241,16 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && $action === "create") {
         exit;
     }
 
+    // --- Photo is REQUIRED ---
+    // A photo must be attached to prove the report is valid and not fake
+    if (!isset($_FILES["photo"]) || $_FILES["photo"]["error"] !== UPLOAD_ERR_OK) {
+        echo json_encode([
+            "success" => false,
+            "error"   => "A photo is required. Please attach a photo of the issue to verify your report."
+        ]);
+        exit;
+    }
+
     // --- Spatial Duplicate Check ---
     // Before creating a new ticket, see if one already exists nearby
     $duplicate = checkAndMergeDuplicate($conn, $issue_type, $latitude, $longitude);
@@ -307,7 +281,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && $action === "create") {
     // --- Generate a unique ticket code ---
     $ticket_code = generateTicketCode($conn);
 
-    // --- Handle optional photo upload ---
+    // --- Handle REQUIRED photo upload ---
     $photo_path = handlePhotoUpload();
 
     // --- Escape all values before inserting into the database ---
@@ -566,10 +540,36 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && $action === "batch") {
 
 
 // ----------------------------------------------------------------
+// ROUTE 6: POST api.php?action=login — Verify maintenance credentials
+// ----------------------------------------------------------------
+if ($_SERVER["REQUEST_METHOD"] === "POST" && $action === "login") {
+
+    // Read username and password from regular POST or JSON body
+    $username = isset($_POST["username"]) ? trim($_POST["username"]) : (isset($jsonBody["username"]) ? trim($jsonBody["username"]) : "");
+    $password = isset($_POST["password"]) ? trim($_POST["password"]) : (isset($jsonBody["password"]) ? trim($jsonBody["password"]) : "");
+
+    // Check credentials: username = "maintenance", password = "isatumaintenance404"
+    if ($username === "maintenance" && $password === "isatumaintenance404") {
+        echo json_encode([
+            "success" => true,
+            "message" => "Login successful. Welcome to wRENcHIRIANs Maintenance Dispatch.",
+            "user"    => "maintenance"
+        ]);
+    } else {
+        echo json_encode([
+            "success" => false,
+            "error"   => "Invalid username or password. Access is restricted to authorized GSO Maintenance personnel."
+        ]);
+    }
+    exit;
+}
+
+
+// ----------------------------------------------------------------
 // FALLBACK: Unknown or unsupported route
 // ----------------------------------------------------------------
 // If none of the routes matched, return a helpful error message.
 echo json_encode([
     "success" => false,
-    "error"   => "Unknown action. Valid actions: create, claim, resolve, batch"
+    "error"   => "Unknown action. Valid actions: create, claim, resolve, batch, login"
 ]);

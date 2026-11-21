@@ -1,0 +1,501 @@
+/* ============================================================
+   student-portal.css
+   ISATU Campus Issue Reporting — Student Portal Layout
+   Split-screen: left = form, right = full 3D map
+   ============================================================ */
+
+/* ── Dashboard link button in header ── */
+.dash-link-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(255,255,255,0.15);
+  color: white;
+  border: 1.5px solid rgba(255,255,255,0.3);
+  border-radius: 8px;
+  padding: 6px 14px;
+  font-size: 12px;
+  font-weight: 700;
+  text-decoration: none;
+  transition: background .2s;
+  white-space: nowrap;
+}
+.dash-link-btn:hover { background: rgba(255,255,255,0.25); }
+
+/* ── Main layout: sidebar + map, side by side ── */
+#student-main {
+  display: flex;
+  height: calc(100vh - 60px);   /* full height minus header */
+  overflow: hidden;
+}
+
+/* ── LEFT SIDEBAR — Report Form ── */
+#report-sidebar {
+  width: 380px;
+  min-width: 320px;
+  max-width: 420px;
+  flex-shrink: 0;
+  background: #f0f4ff;
+  overflow-y: auto;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  border-right: 1px solid #e2e8f0;
+}
+
+.sidebar-title {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  background: white;
+  border-radius: 10px;
+  padding: 14px 16px;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 1px 4px rgba(0,0,0,.06);
+}
+
+.sidebar-title span { font-size: 22px; flex-shrink: 0; margin-top: 2px; }
+
+.sidebar-title h2 {
+  font-size: 14px;
+  font-weight: 800;
+  color: #002663;
+  line-height: 1.3;
+}
+
+.sidebar-title p {
+  font-size: 11px;
+  color: #64748b;
+  margin-top: 2px;
+}
+
+/* ── Pinned location display ── */
+.pin-display {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: #e8eefa;
+  border: 1.5px solid #c7d6f5;
+  border-radius: 8px;
+  padding: 10px 12px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #002663;
+  font-family: 'JetBrains Mono', 'Courier New', monospace;
+  min-height: 42px;
+  transition: background .2s, border-color .2s;
+}
+
+.pin-display.has-pin {
+  background: #f0fdf4;
+  border-color: #86efac;
+  color: #166534;
+}
+
+/* ── RIGHT: Map Panel ── */
+#map-panel {
+  flex: 1;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* ── Map toolbar row ── */
+#map-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 14px;
+  background: white;
+  border-bottom: 1px solid #e2e8f0;
+  gap: 10px;
+  flex-wrap: wrap;
+  flex-shrink: 0;
+  z-index: 10;
+}
+
+.toolbar-btn {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 11px;
+  border: 1.5px solid #d1d5db;
+  border-radius: 20px;
+  background: white;
+  font-size: 11px;
+  font-weight: 700;
+  color: #374151;
+  cursor: pointer;
+  transition: all .15s;
+  white-space: nowrap;
+}
+
+.toolbar-btn:hover { border-color: #002663; color: #002663; background: #f0f4ff; }
+.toolbar-btn.active { background: #002663; color: white; border-color: #002663; }
+
+/* ── Hint banner ── */
+#map-click-hint {
+  position: absolute;
+  top: 54px;    /* below toolbar */
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(0,38,99,.88);
+  color: white;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 6px 16px;
+  border-radius: 20px;
+  z-index: 20;
+  pointer-events: none;
+  white-space: nowrap;
+  backdrop-filter: blur(4px);
+  transition: opacity .4s;
+}
+
+#map-click-hint.hidden { opacity: 0; }
+
+/* ── The actual map div ── */
+#report-map {
+  flex: 1;
+  width: 100%;
+  /* override style.css fixed height */
+  height: 100% !important;
+  min-height: 400px;
+  border-radius: 0;
+  border: none;
+}
+
+/* ── Map legend (bottom-left) ── */
+#map-legend {
+  position: absolute;
+  bottom: 32px;
+  left: 10px;
+  z-index: 20;
+  background: rgba(255,255,255,.95);
+  border-radius: 10px;
+  box-shadow: 0 2px 10px rgba(0,0,0,.18);
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 11px;
+  font-weight: 600;
+  color: #374151;
+}
+
+.legend-swatch {
+  width: 13px;
+  height: 13px;
+  border-radius: 3px;
+  flex-shrink: 0;
+  border: 1px solid rgba(0,0,0,.12);
+}
+
+/* ── Building info popup (floats at bottom-center of map) ── */
+#building-info-panel {
+  position: absolute;
+  bottom: 32px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 30;
+  background: white;
+  border-radius: 14px;
+  box-shadow: 0 8px 32px rgba(0,38,99,.28);
+  padding: 16px 20px;
+  min-width: 300px;
+  max-width: 420px;
+  width: calc(100% - 180px);
+  display: none;
+  border-top: 4px solid #002663;
+  animation: bipSlide .22s ease;
+}
+
+#building-info-panel.show { display: block; }
+
+@keyframes bipSlide {
+  from { opacity:0; transform: translateX(-50%) translateY(10px); }
+  to   { opacity:1; transform: translateX(-50%) translateY(0); }
+}
+
+.bip-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+
+.bip-name {
+  font-size: 14px;
+  font-weight: 800;
+  color: #002663;
+  line-height: 1.3;
+}
+
+.bip-college {
+  font-size: 11px;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 20px;
+  margin-top: 4px;
+  display: inline-block;
+}
+
+.bip-close {
+  background: #f1f5f9;
+  border: none;
+  border-radius: 50%;
+  width: 26px;
+  height: 26px;
+  font-size: 15px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  color: #64748b;
+}
+.bip-close:hover { background: #e2e8f0; }
+
+.bip-coords {
+  font-size: 11px;
+  color: #64748b;
+  font-family: monospace;
+  margin-bottom: 10px;
+}
+
+.bip-pin-btn {
+  width: 100%;
+  padding: 10px;
+  background: linear-gradient(135deg, #002663, #003a99);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  transition: transform .15s, box-shadow .15s;
+}
+.bip-pin-btn:hover { transform: translateY(-1px); box-shadow: 0 4px 14px rgba(0,38,99,.35); }
+
+/* ── Photo lightbox ── */
+#image-modal {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,.85);
+  z-index: 2000;
+  align-items: center;
+  justify-content: center;
+  cursor: zoom-out;
+}
+#image-modal.open { display: flex; }
+#image-modal img {
+  max-width: 90vw;
+  max-height: 90vh;
+  border-radius: 10px;
+  box-shadow: 0 20px 60px rgba(0,0,0,.5);
+  object-fit: contain;
+}
+
+/* ── Report alert in sidebar ── */
+#report-alert {
+  display: none;
+  border-radius: 8px;
+  padding: 12px 14px;
+  font-size: 12px;
+  font-weight: 500;
+  align-items: flex-start;
+  gap: 8px;
+  animation: slideDown .3s ease;
+}
+#report-alert.show    { display: flex; }
+#report-alert.success { background:#f0fdf4;border:1px solid #86efac;color:#166534; }
+#report-alert.warning { background:#fffbeb;border:1px solid #fcd34d;color:#92400e; }
+#report-alert.error   { background:#fef2f2;border:1px solid #fca5a5;color:#991b1b; }
+@keyframes slideDown { from{opacity:0;transform:translateY(-6px)} to{opacity:1;transform:none} }
+
+/* ── Spinner ── */
+.spinner {
+  width: 16px; height: 16px;
+  border: 2.5px solid rgba(255,255,255,.3);
+  border-top-color: white;
+  border-radius: 50%;
+  animation: spin .6s linear infinite;
+  display: inline-block;
+  flex-shrink: 0;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ── Mobile Segmented Tab Bar ── */
+.mobile-tab-bar {
+  display: none;
+}
+
+/* ── Responsive: mobile phone optimization ── */
+@media (max-width: 768px) {
+  body {
+    overflow: hidden;
+    height: 100vh;
+  }
+
+  .hide-mobile {
+    display: none !important;
+  }
+
+  .mobile-tab-bar {
+    display: flex;
+    background: #002663;
+    padding: 6px 10px;
+    gap: 8px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.15);
+    flex-shrink: 0;
+    z-index: 80;
+  }
+
+  .mobile-tab-btn {
+    flex: 1;
+    padding: 7px 10px;
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.12);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    color: #ffffff;
+    font-size: 12.5px;
+    font-weight: 700;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    transition: all 0.2s ease;
+  }
+
+  .mobile-tab-btn.active {
+    background: #ffffff;
+    color: #002663;
+    border-color: #ffffff;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  }
+
+  #student-main {
+    flex-direction: column;
+    height: calc(100vh - 104px);
+    overflow: hidden;
+    position: relative;
+  }
+
+  #report-sidebar {
+    width: 100%;
+    max-width: 100%;
+    height: 100%;
+    border-right: none;
+    padding: 12px;
+    gap: 10px;
+    overflow-y: auto;
+  }
+
+  #map-panel {
+    width: 100%;
+    height: 100%;
+    position: absolute;
+    inset: 0;
+  }
+
+  .mobile-hidden {
+    display: none !important;
+  }
+
+  .sidebar-title {
+    padding: 10px 12px;
+  }
+
+  .sidebar-title span {
+    font-size: 18px;
+  }
+
+  .sidebar-title h2 {
+    font-size: 13px;
+  }
+
+  .sidebar-title p {
+    font-size: 11px;
+  }
+
+  .pin-display {
+    padding: 8px 10px;
+    font-size: 11px;
+    cursor: pointer;
+  }
+
+  .photo-upload-zone {
+    padding: 10px;
+  }
+
+  /* Voluntary Floating Pin Notice on Mobile */
+  .mobile-pin-notice {
+    position: absolute;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%) translateY(20px);
+    background: rgba(0, 38, 99, 0.95);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    color: #ffffff;
+    padding: 8px 14px;
+    border-radius: 30px;
+    box-shadow: 0 4px 18px rgba(0, 0, 0, 0.4);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 12px;
+    z-index: 60;
+    opacity: 0;
+    pointer-events: none;
+    transition: all 0.25s ease;
+    white-space: nowrap;
+    border: 1px solid rgba(255, 255, 255, 0.25);
+  }
+
+  .mobile-pin-notice.show {
+    opacity: 1;
+    pointer-events: auto;
+    transform: translateX(-50%) translateY(0);
+  }
+
+  .mobile-pin-notice .btn-return-form {
+    background: #facc15;
+    color: #0f172a;
+    border: none;
+    font-weight: 800;
+    font-size: 11.5px;
+    padding: 5px 12px;
+    border-radius: 18px;
+    cursor: pointer;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25);
+    transition: transform 0.15s ease;
+  }
+
+  .mobile-pin-notice .btn-return-form:active {
+    transform: scale(0.95);
+  }
+}
+
+/* Ensure all form inputs, textareas, and dropdowns show sharp black text */
+input, textarea, select, .form-control {
+  color: #000000 !important;
+  -webkit-text-fill-color: #000000 !important;
+  background-color: #ffffff !important;
+  caret-color: #000000 !important;
+}

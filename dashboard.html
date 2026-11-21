@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>wRENcHIRIANs — Maintenance Dispatch Dashboard (Interactive 2D Blueprint)</title>
+
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- Inter Font -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+
+  <!-- Favicon -->
+  <link rel="icon" type="image/png" href="assets/wrenchirians-logo.png" />
+
+  <!-- Shared Dashboard Styles & Custom 2D Blueprint Campus Engine CSS -->
+  <link rel="stylesheet" href="dashboard.css?v=3" />
+  <link rel="stylesheet" href="campus-map-2d.css?v=3" />
+</head>
+<body>
+
+<!-- ══════════════════ MAINTENANCE LOGIN GATE ══════════════════ -->
+<div id="maintenance-login-gate" role="dialog" aria-modal="true" aria-label="Maintenance Staff Login">
+  <div class="login-card">
+    <div class="login-header">
+      <img src="assets/wrenchirians-logo.png" alt="wRENcHIRIANs Logo" class="login-logo-img" />
+      <h2>wRENcHIRIANs Maintenance</h2>
+      <p>GSO Dispatch Portal</p>
+    </div>
+
+    <!-- Login Error Alert -->
+    <div id="login-error" class="login-error" role="alert" aria-live="polite"></div>
+
+    <form id="maintenance-login-form" novalidate onsubmit="return false;">
+      <div class="form-group">
+        <label for="login-username">👤 Username</label>
+        <input type="text" id="login-username" name="username" placeholder="Username" autocomplete="username" required autofocus style="color:#000000 !important; background-color:#ffffff !important; caret-color:#000000 !important; font-weight:600;" />
+      </div>
+
+      <div class="form-group">
+        <label for="login-password">🔒 Password</label>
+        <div class="password-wrapper">
+          <input type="password" id="login-password" name="password" placeholder="Password" autocomplete="current-password" required style="color:#000000 !important; background-color:#ffffff !important; caret-color:#000000 !important; font-weight:600;" />
+          <button type="button" class="password-toggle-btn" id="btn-toggle-password" title="Show/Hide Password">👁️</button>
+        </div>
+      </div>
+
+      <button type="submit" id="btn-login-submit" class="btn-login-submit">
+        <span>🔐</span>
+        <span>Sign In</span>
+      </button>
+    </form>
+
+    <div class="login-footer-link">
+      <a href="index.html">← Anonymous Reporting Portal</a>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════ HEADER ══════════════════ -->
+<header id="dash-header">
+  <div class="header-brand">
+    <img src="assets/wrenchirians-logo.png" alt="wRENcHIRIANs Logo" class="header-logo-img" />
+    <div>
+      <h1>wRENcHIRIANs</h1>
+      <div class="header-sub hide-mobile">GSO Operations — ISAT U</div>
+    </div>
+  </div>
+  <div style="display:flex;align-items:center;gap:8px;">
+    <div id="live-badge">🟢 Live</div>
+    <div id="user-profile-chip" class="user-profile-badge" style="display:none;">
+      <span>👷 <b id="logged-user-name">maintenance</b></span>
+      <button type="button" id="btn-logout" class="btn-logout" title="Sign out">Logout</button>
+    </div>
+    <a href="index.html" class="portal-link-btn" title="Open Student Reporting Portal">
+      📋 <span class="hide-mobile">Student Portal</span>
+    </a>
+    <div class="header-time hide-mobile">
+      <span id="hdr-time"></span>
+      <span id="hdr-date"></span>
+    </div>
+  </div>
+</header>
+
+<!-- Mobile Segmented View Switcher (Visible only on phone <= 768px) -->
+<div class="mobile-tab-bar" id="dash-mobile-tab-bar" role="tablist" aria-label="Dashboard view switcher">
+  <button type="button" class="mobile-tab-btn active" id="dash-tab-tickets" onclick="switchDashMobileView('tickets')">
+    📋 Tickets (<span id="dash-tab-count">0</span>)
+  </button>
+  <button type="button" class="mobile-tab-btn" id="dash-tab-map" onclick="switchDashMobileView('map')">
+    🗺️ Live Map
+  </button>
+</div>
+
+<!-- ══════════════════ STATS BAR ══════════════════ -->
+<div id="stats-bar" role="region" aria-label="Ticket statistics">
+  <div class="stat-card total">
+    <div class="stat-value" id="stat-total">0</div>
+    <div class="stat-label">Total</div>
+  </div>
+  <div class="stat-card reported">
+    <div class="stat-value" id="stat-reported">0</div>
+    <div class="stat-label">Reported</div>
+  </div>
+  <div class="stat-card inprogress">
+    <div class="stat-value" id="stat-inprogress">0</div>
+    <div class="stat-label">In Progress</div>
+  </div>
+  <div class="stat-card resolved">
+    <div class="stat-value" id="stat-resolved">0</div>
+    <div class="stat-label">Resolved</div>
+  </div>
+  <div class="stat-card urgent">
+    <div class="stat-value" id="stat-urgent">0</div>
+    <div class="stat-label">Urgent</div>
+  </div>
+</div>
+
+<!-- ══════════════════ MAIN WORKSPACE ══════════════════ -->
+<div id="dash-main">
+
+  <!-- LEFT: Ticket Management Board -->
+  <section id="ticket-board">
+
+    <!-- Filters & Search Toolbar -->
+    <div id="filter-bar">
+      <div class="filter-group">
+        <button type="button" class="filter-btn active" data-status="all">All</button>
+        <button type="button" class="filter-btn" data-status="Reported">🔴 Reported</button>
+        <button type="button" class="filter-btn" data-status="In Progress">🟡 In Progress</button>
+        <button type="button" class="filter-btn" data-status="Resolved">🟢 Resolved</button>
+      </div>
+      <select id="filter-role" aria-label="Filter by assigned technician role">
+        <option value="">All Roles</option>
+        <option value="MIS Technician">MIS Technician</option>
+        <option value="Electrician">Electrician</option>
+        <option value="Plumber">Plumber</option>
+        <option value="HVAC Tech">HVAC Tech</option>
+        <option value="General Maintenance">General Maintenance</option>
+      </select>
+      <input id="filter-search" type="search" placeholder="Search tickets..." autocomplete="off" style="color:#000000 !important; background-color:#ffffff !important; caret-color:#000000 !important;" />
+      <button type="button" id="btn-refresh" title="Refresh Tickets" aria-label="Refresh ticket list">↻</button>
+    </div>
+
+    <!-- Scrollable Cards Container -->
+    <div id="tickets-container" role="list" aria-label="Maintenance tickets" aria-live="polite"></div>
+
+    <!-- Empty State Message -->
+    <div id="tickets-empty">
+      <div style="font-size:36px;">📭</div>
+      <p style="font-weight:700;color:#334155;">No tickets found.</p>
+    </div>
+
+  </section><!-- /ticket-board -->
+
+  <!-- RIGHT: Exact Unified 2D Blueprint Campus Map -->
+  <section id="map-panel" style="flex:1;position:relative;display:flex;flex-direction:column;overflow:hidden;">
+    <div id="dispatch-map" style="width:100%;height:100%;"></div>
+  </section>
+
+</div><!-- /dash-main -->
+
+<!-- ══════════════════ CLAIM MODAL ══════════════════ -->
+<div id="claim-modal" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="claim-modal-title">
+  <div class="modal-box">
+    <div class="modal-header">
+      <h3 id="claim-modal-title">🛠️ Claim Ticket</h3>
+      <button type="button" class="modal-close" onclick="closeClaimModal()" aria-label="Close modal">×</button>
+    </div>
+    <div class="modal-body">
+      <p style="font-size:12px;color:#64748b;margin-bottom:12px;">
+        Enter your name to claim this ticket:
+      </p>
+      <div class="modal-ticket-info" id="modal-ticket-code">—</div>
+      <div class="form-group">
+        <label class="form-label" for="tech-name-input">👷 Technician Name <span class="required">*</span></label>
+        <input id="tech-name-input" type="text" class="form-control"
+               placeholder="Technician name" autocomplete="name" style="color:#000000 !important; background-color:#ffffff !important; caret-color:#000000 !important; font-weight:600;" />
+      </div>
+      <div id="claim-error" class="claim-error"></div>
+    </div>
+    <div class="modal-footer">
+      <button type="button" class="btn-cancel" onclick="closeClaimModal()">Cancel</button>
+      <button type="button" id="btn-confirm-claim">✓ Confirm Claim</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════ PHOTO LIGHTBOX MODAL ══════════════════ -->
+<div id="image-modal" onclick="closeImageModal()">
+  <img id="image-modal-src" src="" alt="Full-size issue photograph" />
+</div>
+
+<!-- Interactive 2D Blueprint Engine & Dashboard Scripts -->
+<script src="campus-map-2d.js?v=3"></script>
+<script src="dashboard.js?v=3"></script>
+
+</body>
+</html>
